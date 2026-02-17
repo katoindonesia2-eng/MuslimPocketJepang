@@ -1,0 +1,1380 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Muslim Pocket Jepang</title>
+  <meta name="description" content="Muslim Pocket Jepang — Muslim Indonesia di Jepang: ayat acak, peta, kiblat, waktu salat, rekomendasi halal, dan berita." />
+
+  <!-- Leaflet fallback map (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Prayer times -->
+  <script src="https://unpkg.com/adhan@4.4.3/dist/adhan.umd.js"></script>
+
+  <!-- Firebase (optional: for total visitors counter) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root{
+      --bg:#fff8ff;
+      --card:#ffffff;
+      --ink:#17212b;
+      --muted:#5b6b7a;
+      --brand:#7c3aed;
+      --brand2:#22c55e;
+      --brand3:#06b6d4;
+      --line:#e8dff5;
+      --shadow: 0 10px 30px rgba(17, 24, 39, .08);
+      --radius: 18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      color:var(--ink);
+      background: radial-gradient(900px 600px at 12% 8%, rgba(124,58,237,.16), transparent 60%),
+                  radial-gradient(900px 600px at 88% 26%, rgba(34,197,94,.13), transparent 60%),
+                  radial-gradient(900px 600px at 85% 90%, rgba(6,182,212,.10), transparent 60%),
+                  var(--bg);
+    }
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,.74);
+      border-bottom: 1px solid var(--line);
+    }
+    .wrap{max-width:1100px; margin:0 auto; padding:16px;}
+
+    .top{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .brand{display:flex; gap:12px; align-items:center;}
+    .logo{
+      width:42px; height:42px; border-radius:14px;
+      background: linear-gradient(135deg, var(--brand), #ff4fd8);
+      display:grid; place-items:center;
+      box-shadow: 0 12px 25px rgba(124,58,237,.25);
+      color:white;
+      font-weight:900;
+      letter-spacing:.6px;
+    }
+    .title{line-height:1.05}
+    .title h1{font-size:18px; margin:0; letter-spacing:.2px}
+    .title p{margin:4px 0 0; color:var(--muted); font-size:12px}
+
+    .lang{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+    select, button, input, textarea{font: inherit;}
+    select{
+      border:1px solid var(--line);
+      background:white;
+      padding:10px 12px;
+      border-radius:12px;
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+    }
+
+    main{padding:18px 0 40px}
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .grid2{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:start;
+    }
+
+    .card{
+      background: rgba(255,255,255,.92);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+    }
+    .card .hd h2{margin:0; font-size:15px}
+    .card .hd p{margin:6px 0 0; color:var(--muted); font-size:12px; line-height:1.5}
+    .card .bd{padding:14px}
+
+    .btn{
+      border:0;
+      background: linear-gradient(135deg, var(--brand), #ff4fd8);
+      color:white;
+      padding:10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:800;
+      box-shadow: 0 12px 25px rgba(124,58,237,.22);
+    }
+    .btn.secondary{
+      background: linear-gradient(135deg, var(--brand2), #60a5fa);
+      box-shadow: 0 12px 25px rgba(34,197,94,.18);
+    }
+    .btn.ghost{
+      background:white;
+      color:var(--ink);
+      border:1px solid var(--line);
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+    }
+    .btn:active{transform: translateY(1px)}
+
+    .chips{display:flex; gap:8px; flex-wrap:wrap}
+    .chip{
+      border:1px solid var(--line);
+      background:white;
+      padding:9px 11px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:800;
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+      user-select:none;
+    }
+    .chip.on{
+      border-color: rgba(34,197,94,.45);
+      outline: 3px solid rgba(34,197,94,.18);
+    }
+
+    .kpiRow{display:flex; gap:12px; flex-wrap:wrap}
+    .kpi{
+      flex: 1 1 220px;
+      padding:12px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+    }
+    .kpi .label{color:var(--muted); font-size:12px}
+    .kpi .value{font-weight:950; font-size:26px; margin-top:2px}
+
+    .note{color:var(--muted); font-size:12px; line-height:1.6}
+
+    /* Quran */
+    .ayah{
+      padding:12px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+    }
+    .ayah .ar{
+      font-size:22px;
+      line-height:1.9;
+      direction: rtl;
+      text-align:right;
+      font-family: "Amiri", "Scheherazade New", "Noto Naskh Arabic", serif;
+    }
+    .ayah .meta{margin-top:8px; color:var(--muted); font-size:12px}
+    .ayah .tr{margin-top:10px; line-height:1.6}
+
+    /* Map containers */
+    #mapLeaflet, #mapGoogle{
+      width:100%;
+      height: 520px;
+    }
+
+    /* Compass */
+    .qiblaWrap{display:grid; place-items:center; padding: 18px 10px 6px;}
+    .compass{
+      width: 230px; height: 230px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: radial-gradient(circle at 50% 35%, rgba(124,58,237,.16), transparent 55%), white;
+      box-shadow: var(--shadow);
+      position: relative;
+      display:grid; place-items:center;
+    }
+    .needle{
+      width: 12px; height: 92px;
+      background: linear-gradient(180deg, #ef4444, rgba(239,68,68,.20));
+      border-radius: 12px;
+      transform-origin: 50% 80%;
+      position:absolute;
+      top: 26px;
+      left: calc(50% - 6px);
+      box-shadow: 0 12px 25px rgba(239,68,68,.18);
+    }
+    .north{
+      position:absolute; top:10px; left:50%; transform:translateX(-50%);
+      font-weight:950; font-size:12px; color:var(--muted);
+    }
+    .kaaba{
+      position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+      font-weight:950; font-size:12px; color:var(--muted);
+    }
+    .kaabaDot{
+      width: 16px; height: 16px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--brand2), var(--brand3));
+      box-shadow: 0 10px 20px rgba(34,197,94,.22);
+    }
+
+    /* Lists */
+    .list{display:grid; gap:10px}
+    .item{
+      display:flex; align-items:flex-start; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+      cursor:pointer;
+    }
+    .item b{font-size:13px}
+    .item .sub{color:var(--muted); font-size:12px; margin-top:3px; line-height:1.4}
+    .item .right{font-variant-numeric: tabular-nums; font-weight:950; white-space:nowrap}
+
+    /* Prayer times */
+    .times{display:grid; gap:10px}
+    .timeRow{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+    }
+    .timeRow b{font-size:13px}
+    .timeRow span{font-variant-numeric: tabular-nums; font-weight:950}
+
+    .twoCol{display:grid; grid-template-columns:1fr; gap:10px}
+    .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+    .field input, .field textarea{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:10px 12px;
+      background:white;
+      box-shadow: 0 6px 16px rgba(17, 24, 39, .05);
+      resize:vertical;
+    }
+
+    footer{
+      border-top:1px solid var(--line);
+      padding:18px 0 40px;
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr;}
+      .grid2{grid-template-columns:1fr;}
+      #mapLeaflet, #mapGoogle{height: 440px;}
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <div class="brand">
+          <div class="logo" aria-hidden="true">MPJ</div>
+          <div class="title">
+            <h1>Muslim Pocket Jepang</h1>
+            <p id="subtitle">Support sederhana untuk Muslim Indonesia di Jepang / 日本のインドネシア系ムスリム向け</p>
+          </div>
+        </div>
+        <div class="lang">
+          <select id="langSel" aria-label="Language">
+            <option value="idja">ID + 日本語</option>
+            <option value="id">Bahasa Indonesia</option>
+            <option value="ja">日本語</option>
+            <option value="en">English</option>
+          </select>
+          <button class="btn ghost" id="btnLocate">📍 <span data-t="locate">Lokasi saya</span></button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="wrap">
+
+      <!-- TOP: Visitor count + Random Ayah -->
+      <section class="grid">
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="home_title">Ringkas Hari Ini</h2>
+              <p data-t="home_desc">Pengunjung, ayat acak, dan pintasan cepat.</p>
+            </div>
+            <div class="chips">
+              <div class="chip" id="chipRefreshAyah">✨ <span data-t="new_ayah">Ayat baru</span></div>
+              <div class="chip" id="chipRefreshAll">↻ <span data-t="refresh">Perbarui</span></div>
+            </div>
+          </div>
+          <div class="bd">
+            <div class="kpiRow">
+              <div class="kpi">
+                <div class="label" data-t="visitors">Total pengunjung (perkiraan)</div>
+                <div class="value" id="visitorsVal">—</div>
+                <div class="note" id="visitorsNote"></div>
+              </div>
+              <div class="kpi">
+                <div class="label" data-t="location">Lokasi</div>
+                <div class="value" id="locVal" style="font-size:18px">—</div>
+                <div class="note" id="locNote"></div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="ayah" aria-live="polite">
+              <div class="ar" id="ayahAr">…</div>
+              <div class="tr" id="ayahTr">…</div>
+              <div class="meta" id="ayahMeta">—</div>
+            </div>
+
+            <div class="note" style="margin-top:10px" data-t="privacy_note">
+              Catatan privasi: lokasi dipakai hanya untuk peta & perhitungan kiblat/waktu salat di perangkat Anda.
+            </div>
+          </div>
+        </div>
+
+        <aside class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="setup_title">Setup (Singkat)</h2>
+              <p data-t="setup_desc">Agar fitur Google Map & penghitung pengunjung bekerja, masukkan API key / Firebase config.</p>
+            </div>
+          </div>
+          <div class="bd">
+            <div class="note" data-t="setup_steps">
+              1) Isi <b>GOOGLE_MAPS_API_KEY</b> (Maps JavaScript + Places).<br/>
+              2) Isi <b>FIREBASE_CONFIG</b> untuk counter pengunjung (Firestore).<br/>
+              Tanpa itu, peta tetap jalan (OpenStreetMap) + counter akan tampil “—”.
+            </div>
+            <div class="note" style="margin-top:10px" data-t="monetize_tip">
+              Monetisasi nanti: tambah Privacy Policy + Terms, lalu pasang AdSense.
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- MAP + NEARBY LIST -->
+      <section class="grid" style="margin-top:14px">
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="map_title">Peta: Masjid & Halal</h2>
+              <p data-t="map_desc">Mode Google Map (dengan Places) atau fallback OpenStreetMap.</p>
+            </div>
+            <div class="chips" style="justify-content:flex-end">
+              <div class="chip on" id="toggleMosque">🕌 <span data-t="mosques">Masjid/Salat</span></div>
+              <div class="chip on" id="toggleHalal">🍜 <span data-t="halal">Restoran/Halal</span></div>
+            </div>
+          </div>
+          <div id="mapGoogle" hidden aria-label="Google Map"></div>
+          <div id="mapLeaflet" aria-label="Leaflet Map"></div>
+        </div>
+
+        <aside class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="near_title">Terdekat</h2>
+              <p data-t="near_desc">Daftar singkat (jarak / rating jika tersedia).</p>
+            </div>
+            <button class="btn secondary" id="btnRefreshNear">↻ <span data-t="refresh">Perbarui</span></button>
+          </div>
+          <div class="bd">
+            <div class="list" id="nearList"></div>
+            <div class="note" style="margin-top:10px" id="nearNote"></div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- QIBLA + PRAYER TIMES -->
+      <section class="grid2">
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="qibla_title">Arah Kiblat</h2>
+              <p data-t="qibla_desc">Ditampilkan sebagai kompas sederhana dengan panah.</p>
+            </div>
+            <button class="btn" id="btnQibla">🧭 <span data-t="calc">Hitung</span></button>
+          </div>
+          <div class="bd">
+            <div class="qiblaWrap">
+              <div class="compass" aria-label="Compass">
+                <div class="north">N</div>
+                <div class="needle" id="needle"></div>
+                <div class="kaaba">Ka'bah</div>
+                <div class="kaabaDot" id="kaabaDot" title="Ka'bah"></div>
+              </div>
+              <div style="margin-top:14px; text-align:center">
+                <div style="font-size:13px; color:var(--muted)" data-t="qibla_bearing_label">Derajat dari Utara (searah jarum jam):</div>
+                <div style="font-size:28px; font-weight:950" id="qiblaDeg">—</div>
+                <div style="font-size:12px; color:var(--muted)" id="qiblaHint"> </div>
+              </div>
+            </div>
+            <div class="note" data-t="qibla_tip" style="margin-top:10px">
+              Tip: kompas HP kadang perlu kalibrasi (gerakkan seperti angka 8).
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="times_title">Waktu Salat (JST)</h2>
+              <p data-t="times_desc">Tampilan sederhana dan mudah dibaca.</p>
+            </div>
+            <button class="btn" id="btnTimes">⏰ <span data-t="show">Tampilkan</span></button>
+          </div>
+          <div class="bd">
+            <div class="times" id="timesBox"></div>
+            <div class="note" id="timesMeta" style="margin-top:10px"></div>
+
+            <div style="margin-top:12px" class="twoCol">
+              <div class="field">
+                <label data-t="method">Metode</label>
+                <select id="methodSel">
+                  <option value="MWL">Muslim World League (default)</option>
+                  <option value="EGYPT">Egyptian General Authority</option>
+                  <option value="KARACHI">Karachi</option>
+                  <option value="UMM_AL_QURA">Umm al-Qura (Makkah)</option>
+                  <option value="DUBAI">Dubai</option>
+                </select>
+              </div>
+              <div class="field">
+                <label data-t="asr">Asr</label>
+                <select id="asrSel">
+                  <option value="STANDARD">Standard</option>
+                  <option value="HANAFI">Hanafi</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="note" data-t="times_disclaimer" style="margin-top:10px">
+              Catatan: waktu salat bergantung pada metode. Mohon cek dengan komunitas lokal jika diperlukan.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ADD PLACE (local) + NEWS -->
+      <section class="grid2" style="margin-top:14px">
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="add_title">Tambah Tempat (Local)</h2>
+              <p data-t="add_desc">MVP: tersimpan di browser Anda. (Nanti bisa Firebase untuk berbagi.)</p>
+            </div>
+            <button class="btn" id="btnAdd">➕ <span data-t="save">Simpan</span></button>
+          </div>
+          <div class="bd">
+            <div class="twoCol">
+              <div class="field">
+                <label data-t="type">Jenis</label>
+                <select id="typeSel">
+                  <option value="mosque">🕌 Masjid / Ruang Salat</option>
+                  <option value="halal">🍜 Restoran Indonesia / Halal Market</option>
+                </select>
+              </div>
+              <div class="field">
+                <label data-t="name">Nama</label>
+                <input id="nameInp" placeholder="Contoh: Masjid / Prayer room / Halal mart" />
+              </div>
+              <div class="field">
+                <label data-t="desc">Catatan</label>
+                <textarea id="descInp" rows="3" placeholder="Alamat singkat / jam buka / info wudhu / dll"></textarea>
+              </div>
+              <div class="field">
+                <label data-t="coords">Koordinat (Lat,Lng)</label>
+                <input id="coordInp" placeholder="Contoh: 35.6812, 139.7671" />
+              </div>
+              <button class="btn ghost" id="btnUseMy">📍 <span data-t="use_my">Pakai lokasi saya</span></button>
+              <div class="note" id="addMsg"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="hd">
+            <div>
+              <h2 data-t="news_title">Berita Terkini</h2>
+              <p data-t="news_desc">Pick up: top berita untuk komunitas (Google News RSS, ringkas).</p>
+            </div>
+            <button class="btn secondary" id="btnNews">📰 <span data-t="refresh">Perbarui</span></button>
+          </div>
+          <div class="bd">
+            <div class="list" id="newsList"></div>
+            <div class="note" style="margin-top:10px" id="newsNote"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div><b>Muslim Pocket Jepang</b> · Simple MVP</div>
+      <div style="margin-top:6px">Maps: Google (optional) / OpenStreetMap fallback · Prayer times: Adhan.js · Ayah: AlQuran Cloud API · News: Google News RSS (via CORS-friendly fetch).</div>
+    </div>
+  </footer>
+
+  <script>
+    // =====================================================
+    // 0) CONFIG (edit these)
+    // =====================================================
+    // (A) Google Maps + Places (Optional)
+    // Create a key on Google Cloud Console (Maps JavaScript API + Places API)
+    const GOOGLE_MAPS_API_KEY = ""; // <-- put your key here
+
+    // (B) Firebase Firestore (Optional) - for total visitors counter
+    // Create Firebase project -> Firestore -> copy web app config
+    const FIREBASE_CONFIG = null; // <-- paste like { apiKey: "...", authDomain: "...", projectId: "...", ... }
+
+    // =====================================================
+    // 1) Simple bilingual i18n
+    // =====================================================
+    const T = {
+      locate: { id:"Lokasi saya", ja:"現在地", en:"My location" },
+      refresh: { id:"Perbarui", ja:"更新", en:"Refresh" },
+
+      home_title: { id:"Ringkas Hari Ini", ja:"今日のまとめ", en:"Today at a Glance" },
+      home_desc: { id:"Pengunjung, ayat acak, dan pintasan cepat.", ja:"アクセス数・ランダムなクルアーン・ショートカット。", en:"Visitors, random ayah, quick shortcuts." },
+      new_ayah: { id:"Ayat baru", ja:"別の一節", en:"New ayah" },
+
+      visitors: { id:"Total pengunjung (perkiraan)", ja:"アクセス数（概算）", en:"Total visitors (approx.)" },
+      location: { id:"Lokasi", ja:"場所", en:"Location" },
+
+      privacy_note: { id:"Catatan privasi: lokasi dipakai hanya untuk peta & perhitungan kiblat/waktu salat di perangkat Anda.", ja:"プライバシー: 位置情報は端末内で地図・キブラ・礼拝時間の計算にのみ使用します。", en:"Privacy: your location is used only in your browser for map & calculations." },
+
+      setup_title: { id:"Setup (Singkat)", ja:"セットアップ（簡単）", en:"Setup (Quick)" },
+      setup_desc: { id:"Agar fitur Google Map & penghitung pengunjung bekerja, masukkan API key / Firebase config.", ja:"Googleマップとアクセス数表示を動かすには APIキー/Firebase設定が必要です。", en:"To enable Google Maps & visitor counter, add an API key / Firebase config." },
+      setup_steps: { id:"1) Isi GOOGLE_MAPS_API_KEY (Maps JavaScript + Places). 2) Isi FIREBASE_CONFIG untuk counter (Firestore). Tanpa itu, peta fallback + counter “—”.", ja:"1) GOOGLE_MAPS_API_KEY（Maps JS + Places） 2) FIREBASE_CONFIG（Firestore） 未設定でも地図はフォールバックし、カウンターは“—”。", en:"1) Set GOOGLE_MAPS_API_KEY (Maps JS + Places). 2) Set FIREBASE_CONFIG (Firestore). Without them: fallback map + counter “—”." },
+      monetize_tip: { id:"Monetisasi nanti: tambah Privacy Policy + Terms, lalu pasang AdSense.", ja:"収益化: Privacy Policy / Terms を用意してから AdSense を検討。", en:"Monetize later: add Privacy Policy & Terms, then consider AdSense." },
+
+      map_title: { id:"Peta: Masjid & Halal", ja:"地図: モスク & ハラール", en:"Map: Mosques & Halal" },
+      map_desc: { id:"Mode Google Map (dengan Places) atau fallback OpenStreetMap.", ja:"Googleマップ（Places）またはOpenStreetMapのフォールバック。", en:"Google Map (Places) or OpenStreetMap fallback." },
+      mosques: { id:"Masjid/Salat", ja:"モスク/礼拝", en:"Mosques/Prayer" },
+      halal: { id:"Restoran/Halal", ja:"飲食/ハラール", en:"Food/Halal" },
+      near_title: { id:"Terdekat", ja:"近い順", en:"Nearby" },
+      near_desc: { id:"Daftar singkat (jarak / rating jika tersedia).", ja:"距離（＋可能なら評価）で表示。", en:"Short list (distance / rating if available)." },
+
+      qibla_title: { id:"Arah Kiblat", ja:"キブラの方向", en:"Qibla Direction" },
+      qibla_desc: { id:"Ditampilkan sebagai kompas sederhana dengan panah.", ja:"矢印付きのシンプルなコンパス表示。", en:"Shown as a simple compass with an arrow." },
+      calc: { id:"Hitung", ja:"計算", en:"Calculate" },
+      qibla_bearing_label: { id:"Derajat dari Utara (searah jarum jam):", ja:"北を0°として時計回りの角度:", en:"Degrees from North (clockwise):" },
+      qibla_tip: { id:"Tip: kompas HP kadang perlu kalibrasi (gerakkan seperti angka 8).", ja:"Tip: スマホのコンパスは調整が必要なことがあります（8の字）。", en:"Tip: phone compass may need calibration (figure-8)." },
+
+      times_title: { id:"Waktu Salat (JST)", ja:"礼拝時間（日本時間）", en:"Prayer Times (JST)" },
+      times_desc: { id:"Tampilan sederhana dan mudah dibaca.", ja:"見やすいシンプル表示。", en:"Simple, easy-to-read display." },
+      show: { id:"Tampilkan", ja:"表示", en:"Show" },
+      method: { id:"Metode", ja:"計算方式", en:"Method" },
+      asr: { id:"Asr", ja:"アスル", en:"Asr" },
+      times_disclaimer: { id:"Catatan: waktu salat bergantung pada metode. Mohon cek dengan komunitas lokal jika diperlukan.", ja:"注意: 計算方式により差があります。必要に応じて地域の案内も確認してください。", en:"Note: times vary by method. Verify with local community if needed." },
+
+      add_title: { id:"Tambah Tempat (Local)", ja:"場所追加（端末内）", en:"Add Place (Local)" },
+      add_desc: { id:"MVP: tersimpan di browser Anda. (Nanti bisa Firebase untuk berbagi.)", ja:"MVP: ブラウザに保存（後でFirebase共有可）。", en:"MVP: saved in your browser. (Can be shared via Firebase later.)" },
+      save: { id:"Simpan", ja:"保存", en:"Save" },
+      type: { id:"Jenis", ja:"種類", en:"Type" },
+      name: { id:"Nama", ja:"名前", en:"Name" },
+      desc: { id:"Catatan", ja:"メモ", en:"Notes" },
+      coords: { id:"Koordinat (Lat,Lng)", ja:"座標（緯度,経度）", en:"Coordinates (Lat,Lng)" },
+      use_my: { id:"Pakai lokasi saya", ja:"現在地を使う", en:"Use my location" },
+
+      news_title: { id:"Berita Terkini", ja:"最新ニュース", en:"Latest News" },
+      news_desc: { id:"Pick up: top berita untuk komunitas (Google News RSS, ringkas).", ja:"コミュニティ向けにピックアップ（Google News RSS）。", en:"Picked from Google News RSS." },
+    };
+
+    function setTextForMode(mode){
+      document.documentElement.lang = (mode === 'ja') ? 'ja' : (mode === 'en' ? 'en' : 'id');
+      document.querySelectorAll('[data-t]').forEach(el => {
+        const k = el.getAttribute('data-t');
+        const d = T[k];
+        if(!d) return;
+        if(mode === 'idja') el.textContent = `${d.id} / ${d.ja}`;
+        else if(mode === 'id') el.textContent = d.id;
+        else if(mode === 'ja') el.textContent = d.ja;
+        else el.textContent = d.en;
+      });
+    }
+
+    // =====================================================
+    // 2) Storage (places local) + samples
+    // =====================================================
+    const LS_KEY = "mpj_places_v2";
+    /** @type {{id:string,type:'mosque'|'halal',name:string,desc:string,lat:number,lng:number,createdAt:number}[]} */
+    let places = [];
+
+    function loadPlaces(){
+      try{
+        const raw = localStorage.getItem(LS_KEY);
+        places = raw ? JSON.parse(raw) : [];
+      } catch { places = []; }
+
+      if(!places.length){
+        places = [
+          {id: crypto.randomUUID(), type:'mosque', name:'Tokyo Camii (Sample)', desc:'Shibuya-ku, Tokyo / サンプル', lat:35.6699, lng:139.6892, createdAt: Date.now()},
+          {id: crypto.randomUUID(), type:'mosque', name:'Osaka Ibaraki Mosque (Sample)', desc:'Ibaraki-shi, Osaka / サンプル', lat:34.8170, lng:135.5680, createdAt: Date.now()},
+          {id: crypto.randomUUID(), type:'halal', name:'Halal Market (Sample)', desc:'Terdekat (contoh) / サンプル', lat:35.6812, lng:139.7671, createdAt: Date.now()},
+        ];
+        savePlaces();
+      }
+    }
+    function savePlaces(){ localStorage.setItem(LS_KEY, JSON.stringify(places)); }
+
+    // =====================================================
+    // 3) Geolocation + distance
+    // =====================================================
+    /** @type {{lat:number,lng:number}|null} */
+    let userPos = null;
+
+    function getLocation(){
+      return new Promise((resolve, reject) => {
+        if(!navigator.geolocation){ reject(new Error('Geolocation not supported')); return; }
+        navigator.geolocation.getCurrentPosition(
+          (pos) => resolve({lat: pos.coords.latitude, lng: pos.coords.longitude}),
+          (err) => reject(err),
+          { enableHighAccuracy: true, timeout: 12000, maximumAge: 10000 }
+        );
+      });
+    }
+
+    function distM(a,b){
+      const R = 6371e3;
+      const toRad = d => d*Math.PI/180;
+      const dLat = toRad(b.lat-a.lat);
+      const dLng = toRad(b.lng-a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const x = Math.sin(dLat/2)**2 + Math.cos(lat1)*Math.cos(lat2)*Math.sin(dLng/2)**2;
+      return 2*R*Math.asin(Math.sqrt(x));
+    }
+
+    // =====================================================
+    // 4) Qibla bearing
+    // =====================================================
+    const KAABA = { lat: 21.422487, lng: 39.826206 };
+    function bearingDeg(from, to){
+      const toRad = d => d*Math.PI/180;
+      const toDeg = r => (r*180/Math.PI + 360) % 360;
+      const φ1 = toRad(from.lat);
+      const φ2 = toRad(to.lat);
+      const Δλ = toRad(to.lng - from.lng);
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      return toDeg(Math.atan2(y, x));
+    }
+
+    // =====================================================
+    // 5) Quran random ayah
+    // =====================================================
+    // Uses AlQuran Cloud (public API). Random ayah each visit / refresh.
+    async function loadRandomAyah(){
+      const id = 1 + Math.floor(Math.random() * 6236);
+      const url = `https://api.alquran.cloud/v1/ayah/${id}/editions/quran-uthmani,id.indonesian,ja.japanese`;
+      const arEl = document.getElementById('ayahAr');
+      const trEl = document.getElementById('ayahTr');
+      const metaEl = document.getElementById('ayahMeta');
+
+      arEl.textContent = '…';
+      trEl.textContent = '…';
+      metaEl.textContent = '—';
+
+      try{
+        const res = await fetch(url);
+        const json = await res.json();
+        const data = json?.data;
+        if(!Array.isArray(data) || data.length < 3) throw new Error('Bad response');
+
+        const ar = data.find(x => x?.edition?.identifier === 'quran-uthmani') || data[0];
+        const idTr = data.find(x => x?.edition?.language === 'id') || data[1];
+        const jaTr = data.find(x => x?.edition?.language === 'ja') || data[2];
+
+        arEl.textContent = ar.text;
+        // default display: Indonesian + Japanese. Language selector will not change these lines (kept bilingual).
+        const surahName = ar?.surah?.englishName || ar?.surah?.name || '—';
+        const ayahNo = ar?.numberInSurah ?? '—';
+
+        trEl.innerHTML = `
+          <div><b>🇮🇩</b> ${escapeHtml(idTr.text)}</div>
+          <div style="margin-top:8px"><b>🇯🇵</b> ${escapeHtml(jaTr.text)}</div>
+        `;
+        metaEl.textContent = `Surah: ${surahName} · Ayah: ${ayahNo} · #${id}`;
+      } catch(e){
+        arEl.textContent = 'Tidak bisa memuat ayat sekarang.';
+        trEl.textContent = 'Coba lagi nanti.';
+        metaEl.textContent = '—';
+      }
+    }
+
+    // =====================================================
+    // 6) Prayer times (Adhan.js)
+    // =====================================================
+    function methodFromSel(){
+      const v = document.getElementById('methodSel').value;
+      const methods = adhan.CalculationMethod;
+      switch(v){
+        case 'EGYPT': return methods.Egyptian();
+        case 'KARACHI': return methods.Karachi();
+        case 'UMM_AL_QURA': return methods.UmmAlQura();
+        case 'DUBAI': return methods.Dubai();
+        case 'MWL':
+        default: return methods.MuslimWorldLeague();
+      }
+    }
+    function asrFromSel(){
+      const v = document.getElementById('asrSel').value;
+      return v === 'HANAFI' ? adhan.Madhab.Hanafi : adhan.Madhab.Shafi;
+    }
+    function fmtTime(d){
+      return new Intl.DateTimeFormat('ja-JP', {
+        hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Asia/Tokyo'
+      }).format(d);
+    }
+
+    function renderPrayerTimes(){
+      const box = document.getElementById('timesBox');
+      const meta = document.getElementById('timesMeta');
+      box.innerHTML = '';
+      meta.textContent = '';
+
+      if(!userPos){
+        box.innerHTML = `<div class="note">Aktifkan lokasi untuk menghitung waktu salat.</div>`;
+        return;
+      }
+
+      const params = methodFromSel();
+      params.madhab = asrFromSel();
+
+      const date = new Date();
+      const coords = new adhan.Coordinates(userPos.lat, userPos.lng);
+      const pt = new adhan.PrayerTimes(coords, date, params);
+
+      const rows = [
+        ['Fajr', pt.fajr],
+        ['Sunrise', pt.sunrise],
+        ['Dhuhr', pt.dhuhr],
+        ['Asr', pt.asr],
+        ['Maghrib', pt.maghrib],
+        ['Isha', pt.isha]
+      ];
+
+      for(const [name, time] of rows){
+        const r = document.createElement('div');
+        r.className = 'timeRow';
+        r.innerHTML = `<b>${name}</b><span>${fmtTime(time)}</span>`;
+        box.appendChild(r);
+      }
+
+      meta.textContent = `Lat/Lng: ${userPos.lat.toFixed(5)}, ${userPos.lng.toFixed(5)} · Timezone: JST · Method: ${document.getElementById('methodSel').value} · Asr: ${document.getElementById('asrSel').value}`;
+    }
+
+    // =====================================================
+    // 7) Maps
+    // =====================================================
+    // Leaflet fallback
+    let leafletMap, layerMosque, layerHalal, meMarker;
+
+    function initLeaflet(){
+      leafletMap = L.map('mapLeaflet');
+      leafletMap.setView([35.6812, 139.7671], 12);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(leafletMap);
+
+      layerMosque = L.layerGroup().addTo(leafletMap);
+      layerHalal = L.layerGroup().addTo(leafletMap);
+      renderLeafletMarkers();
+    }
+
+    function markerIcon(type){
+      const emoji = type === 'mosque' ? '🕌' : '🍜';
+      return L.divIcon({
+        className: 'emoji-icon',
+        html: `<div style="font-size:22px; filter: drop-shadow(0 6px 12px rgba(0,0,0,.15))">${emoji}</div>`,
+        iconSize: [24,24],
+        iconAnchor: [12,12]
+      });
+    }
+
+    function renderLeafletMarkers(){
+      layerMosque.clearLayers();
+      layerHalal.clearLayers();
+      for(const p of places){
+        const m = L.marker([p.lat, p.lng], { icon: markerIcon(p.type) })
+          .bindPopup(`<b>${escapeHtml(p.name)}</b><br/><span style="color:#5b6b7a">${escapeHtml(p.desc||'')}</span>`);
+        (p.type === 'mosque' ? layerMosque : layerHalal).addLayer(m);
+      }
+    }
+
+    function setLeafletUserMarker(pos){
+      userPos = pos;
+      if(meMarker){ meMarker.remove(); }
+      meMarker = L.circleMarker([pos.lat, pos.lng], {
+        radius: 9,
+        weight: 2,
+        color: '#7c3aed',
+        fillColor: '#ff4fd8',
+        fillOpacity: .35
+      }).addTo(leafletMap).bindPopup('📍 You');
+
+      leafletMap.setView([pos.lat, pos.lng], 13);
+      refreshNear();
+    }
+
+    // Google Maps + Places (optional)
+    let gmap = null;
+    let gMeMarker = null;
+    let gMosqueMarkers = [];
+    let gHalalMarkers = [];
+    let placesService = null;
+
+    function loadGoogleMapsScript(){
+      return new Promise((resolve, reject) => {
+        if(!GOOGLE_MAPS_API_KEY){ reject(new Error('No key')); return; }
+        if(window.google?.maps){ resolve(); return; }
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}&libraries=places`;
+        s.async = true;
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error('Failed to load Google Maps')); 
+        document.head.appendChild(s);
+      });
+    }
+
+    function initGoogleMap(){
+      const el = document.getElementById('mapGoogle');
+      gmap = new google.maps.Map(el, {
+        center: {lat: 35.6812, lng: 139.7671},
+        zoom: 12,
+        mapId: undefined,
+        fullscreenControl: false,
+        streetViewControl: false,
+      });
+      placesService = new google.maps.places.PlacesService(gmap);
+    }
+
+    function clearGMarkers(arr){
+      for(const m of arr){ m.setMap(null); }
+      arr.length = 0;
+    }
+
+    function setGoogleUser(pos){
+      userPos = pos;
+      const ll = new google.maps.LatLng(pos.lat, pos.lng);
+      gmap.setCenter(ll);
+      gmap.setZoom(13);
+
+      if(gMeMarker) gMeMarker.setMap(null);
+      gMeMarker = new google.maps.Marker({
+        position: ll,
+        map: gmap,
+        title: 'You',
+        label: { text: '●', color: '#7c3aed', fontSize: '18px' }
+      });
+    }
+
+    function nearbySearchGoogle(){
+      if(!placesService || !userPos) return;
+
+      const showMosque = document.getElementById('toggleMosque').classList.contains('on');
+      const showHalal = document.getElementById('toggleHalal').classList.contains('on');
+
+      clearGMarkers(gMosqueMarkers);
+      clearGMarkers(gHalalMarkers);
+
+      const center = new google.maps.LatLng(userPos.lat, userPos.lng);
+      const radius = 6000;
+
+      const tasks = [];
+
+      if(showMosque){
+        tasks.push(new Promise((resolve) => {
+          placesService.nearbySearch({
+            location: center,
+            radius,
+            keyword: 'mosque OR musalla OR prayer room OR 礼拝室',
+            type: 'mosque'
+          }, (results, status) => {
+            if(status !== google.maps.places.PlacesServiceStatus.OK || !results){ resolve([]); return; }
+            resolve(results);
+          });
+        }));
+      } else tasks.push(Promise.resolve([]));
+
+      if(showHalal){
+        tasks.push(new Promise((resolve) => {
+          placesService.nearbySearch({
+            location: center,
+            radius,
+            keyword: 'indonesian restaurant OR halal market OR halal grocery OR ハラル OR インドネシア料理'
+          }, (results, status) => {
+            if(status !== google.maps.places.PlacesServiceStatus.OK || !results){ resolve([]); return; }
+            resolve(results);
+          });
+        }));
+      } else tasks.push(Promise.resolve([]));
+
+      Promise.all(tasks).then(([mosques, halal]) => {
+        // add markers
+        for(const r of mosques.slice(0, 15)){
+          const m = new google.maps.Marker({
+            map: gmap,
+            position: r.geometry.location,
+            title: r.name,
+            label: '🕌'
+          });
+          const info = new google.maps.InfoWindow({
+            content: `<b>${escapeHtml(r.name)}</b><br/><span style="color:#5b6b7a">${escapeHtml(r.vicinity||'')}</span>`
+          });
+          m.addListener('click', () => info.open({anchor:m, map:gmap}));
+          gMosqueMarkers.push(m);
+        }
+
+        for(const r of halal.slice(0, 15)){
+          const m = new google.maps.Marker({
+            map: gmap,
+            position: r.geometry.location,
+            title: r.name,
+            label: '🍜'
+          });
+          const info = new google.maps.InfoWindow({
+            content: `<b>${escapeHtml(r.name)}</b><br/><span style="color:#5b6b7a">${escapeHtml(r.vicinity||'')}</span><br/><span style="color:#5b6b7a">⭐ ${r.rating ?? '—'} (${r.user_ratings_total ?? 0})</span>`
+          });
+          m.addListener('click', () => info.open({anchor:m, map:gmap}));
+          gHalalMarkers.push(m);
+        }
+
+        // update near list from results (recommendation)
+        const merged = [
+          ...mosques.map(r => ({
+            kind:'mosque',
+            name:r.name,
+            addr:r.vicinity || '',
+            lat:r.geometry.location.lat(),
+            lng:r.geometry.location.lng(),
+            rating:r.rating,
+            ratingsTotal:r.user_ratings_total
+          })),
+          ...halal.map(r => ({
+            kind:'halal',
+            name:r.name,
+            addr:r.vicinity || '',
+            lat:r.geometry.location.lat(),
+            lng:r.geometry.location.lng(),
+            rating:r.rating,
+            ratingsTotal:r.user_ratings_total
+          }))
+        ];
+
+        renderNearListFromDynamic(merged, 'google');
+      });
+    }
+
+    // =====================================================
+    // 8) Nearby list & recommendation
+    // =====================================================
+    function renderNearListFromLocal(){
+      if(!userPos){
+        document.getElementById('nearList').innerHTML = '';
+        document.getElementById('nearNote').textContent = 'Aktifkan lokasi untuk melihat terdekat.';
+        return;
+      }
+      const showMosque = document.getElementById('toggleMosque').classList.contains('on');
+      const showHalal = document.getElementById('toggleHalal').classList.contains('on');
+
+      const candidates = places
+        .filter(p => (p.type==='mosque' && showMosque) || (p.type==='halal' && showHalal))
+        .map(p => ({...p, d: distM(userPos, {lat:p.lat, lng:p.lng})}))
+        .sort((a,b) => a.d - b.d)
+        .slice(0, 10);
+
+      const box = document.getElementById('nearList');
+      box.innerHTML = '';
+      for(const c of candidates){
+        const km = c.d/1000;
+        const el = document.createElement('div');
+        el.className = 'item';
+        el.innerHTML = `
+          <div>
+            <b>${c.type==='mosque'?'🕌':'🍜'} ${escapeHtml(c.name)}</b>
+            <div class="sub">${escapeHtml(c.desc||'')}</div>
+          </div>
+          <div class="right">${km < 10 ? km.toFixed(1) : km.toFixed(0)} km</div>
+        `;
+        el.onclick = () => {
+          leafletMap?.setView([c.lat, c.lng], 15);
+        };
+        box.appendChild(el);
+      }
+      document.getElementById('nearNote').textContent = 'Mode: Local (marker dari data sample + input Anda). Untuk rekomendasi otomatis, isi Google API key.';
+    }
+
+    function renderNearListFromDynamic(items, mode){
+      const box = document.getElementById('nearList');
+      const note = document.getElementById('nearNote');
+      box.innerHTML = '';
+
+      if(!userPos){
+        note.textContent = 'Aktifkan lokasi untuk melihat terdekat.';
+        return;
+      }
+      const showMosque = document.getElementById('toggleMosque').classList.contains('on');
+      const showHalal = document.getElementById('toggleHalal').classList.contains('on');
+
+      const filtered = items
+        .filter(x => (x.kind==='mosque' && showMosque) || (x.kind==='halal' && showHalal))
+        .map(x => ({...x, d: distM(userPos, {lat:x.lat, lng:x.lng})}))
+        // simple recommendation: prefer rating first, then distance
+        .sort((a,b) => {
+          const ar = (a.rating ?? 0), br = (b.rating ?? 0);
+          if(br !== ar) return br - ar;
+          return a.d - b.d;
+        })
+        .slice(0, 8);
+
+      for(const x of filtered){
+        const km = x.d/1000;
+        const el = document.createElement('div');
+        el.className = 'item';
+        const star = (x.rating != null) ? `⭐ ${x.rating} (${x.ratingsTotal ?? 0})` : '';
+        el.innerHTML = `
+          <div>
+            <b>${x.kind==='mosque'?'🕌':'🍜'} ${escapeHtml(x.name)}</b>
+            <div class="sub">${escapeHtml(x.addr)}${star ? ` · <span style="color:#5b6b7a">${escapeHtml(star)}</span>` : ''}</div>
+          </div>
+          <div class="right">${km < 10 ? km.toFixed(1) : km.toFixed(0)} km</div>
+        `;
+        el.onclick = () => {
+          if(mode==='google'){
+            gmap?.setCenter({lat:x.lat, lng:x.lng});
+            gmap?.setZoom(15);
+          } else {
+            leafletMap?.setView([x.lat, x.lng], 15);
+          }
+        };
+        box.appendChild(el);
+      }
+
+      note.textContent = mode==='google'
+        ? 'Mode: Google Places (rekomendasi berdasar rating + jarak).'
+        : 'Mode: Local.';
+    }
+
+    function refreshNear(){
+      // If Google Maps is active, refresh via Places; else local list
+      if(gmap && placesService){
+        nearbySearchGoogle();
+      } else {
+        renderNearListFromLocal();
+      }
+    }
+
+    // =====================================================
+    // 9) Add place
+    // =====================================================
+    function parseLatLng(text){
+      const m = text.split(',').map(s => s.trim());
+      if(m.length !== 2) return null;
+      const lat = Number(m[0]);
+      const lng = Number(m[1]);
+      if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      if(lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+      return {lat, lng};
+    }
+
+    function addPlace(){
+      const type = document.getElementById('typeSel').value;
+      const name = document.getElementById('nameInp').value.trim();
+      const desc = document.getElementById('descInp').value.trim();
+      const coordRaw = document.getElementById('coordInp').value.trim();
+      const msg = document.getElementById('addMsg');
+
+      msg.textContent = '';
+      msg.style.color = 'var(--muted)';
+
+      if(!name){
+        msg.textContent = 'Nama wajib diisi.';
+        msg.style.color = '#ef4444';
+        return;
+      }
+      const ll = parseLatLng(coordRaw);
+      if(!ll){
+        msg.textContent = 'Koordinat tidak valid. Contoh: 35.6812, 139.7671';
+        msg.style.color = '#ef4444';
+        return;
+      }
+
+      places.unshift({
+        id: crypto.randomUUID(),
+        type,
+        name,
+        desc,
+        lat: ll.lat,
+        lng: ll.lng,
+        createdAt: Date.now()
+      });
+      savePlaces();
+      renderLeafletMarkers();
+      refreshNear();
+
+      msg.textContent = 'Tersimpan! Silakan cek di Peta.';
+      msg.style.color = '#16a34a';
+
+      document.getElementById('nameInp').value = '';
+      document.getElementById('descInp').value = '';
+    }
+
+    // =====================================================
+    // 10) News (Google News RSS) - CORS friendly via r.jina.ai
+    // =====================================================
+    // NOTE: This is a lightweight approach. For production, use a serverless proxy.
+    async function loadNews(){
+      const box = document.getElementById('newsList');
+      const note = document.getElementById('newsNote');
+      box.innerHTML = '';
+      note.textContent = '';
+
+      const feeds = [
+        // Indonesian in Japan
+        'https://news.google.com/rss/search?q=%E5%9C%A8%E6%97%A5%20%E3%82%A4%E3%83%B3%E3%83%89%E3%83%8D%E3%82%B7%E3%82%A2&hl=ja&gl=JP&ceid=JP:ja',
+        // Halal / Muslim Japan
+        'https://news.google.com/rss/search?q=halal%20japan%20mosque%20prayer%20room&hl=en&gl=JP&ceid=JP:en'
+      ];
+
+      try{
+        const allItems = [];
+        for(const f of feeds){
+          const proxied = 'https://r.jina.ai/' + f;
+          const xmlText = await (await fetch(proxied)).text();
+          const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+          const items = [...doc.querySelectorAll('item')].slice(0, 6).map(it => ({
+            title: it.querySelector('title')?.textContent?.trim() || '—',
+            link: it.querySelector('link')?.textContent?.trim() || '#',
+            pubDate: it.querySelector('pubDate')?.textContent?.trim() || ''
+          }));
+          allItems.push(...items);
+        }
+
+        // Sort by date if possible
+        allItems.sort((a,b) => (Date.parse(b.pubDate)||0) - (Date.parse(a.pubDate)||0));
+
+        for(const n of allItems.slice(0, 8)){
+          const el = document.createElement('div');
+          el.className = 'item';
+          el.innerHTML = `
+            <div>
+              <b>${escapeHtml(n.title)}</b>
+              <div class="sub">${escapeHtml(n.pubDate)}</div>
+            </div>
+            <div class="right">↗</div>
+          `;
+          el.onclick = () => window.open(n.link, '_blank', 'noopener,noreferrer');
+          box.appendChild(el);
+        }
+
+        note.textContent = 'Sumber: Google News RSS (hasil bisa berbeda tergantung waktu/region).';
+      } catch(e){
+        note.textContent = 'Tidak bisa memuat berita sekarang. (CORS/Network)';
+      }
+    }
+
+    // =====================================================
+    // 11) Visitors counter (Firestore optional)
+    // =====================================================
+    async function initVisitorCounter(){
+      const val = document.getElementById('visitorsVal');
+      const note = document.getElementById('visitorsNote');
+
+      if(!FIREBASE_CONFIG){
+        val.textContent = '—';
+        note.textContent = 'Untuk menampilkan total pengunjung, isi FIREBASE_CONFIG lalu buat Firestore.';
+        return;
+      }
+
+      try{
+        firebase.initializeApp(FIREBASE_CONFIG);
+        const db = firebase.firestore();
+        const ref = db.collection('stats').doc('visits');
+
+        // Transaction: increment visits
+        await db.runTransaction(async (tx) => {
+          const snap = await tx.get(ref);
+          const cur = snap.exists ? (snap.data().count || 0) : 0;
+          tx.set(ref, { count: cur + 1, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge:true });
+        });
+
+        // Read back
+        const snap2 = await ref.get();
+        const count = snap2.exists ? (snap2.data().count || 0) : 0;
+        val.textContent = String(count);
+        note.textContent = 'Counter: Firestore (global).';
+      } catch(e){
+        val.textContent = '—';
+        note.textContent = 'Counter error. Cek Firestore rules / config.';
+      }
+    }
+
+    // =====================================================
+    // 12) UI helpers
+    // =====================================================
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function setLocLabel(){
+      const locVal = document.getElementById('locVal');
+      const locNote = document.getElementById('locNote');
+      if(!userPos){
+        locVal.textContent = '—';
+        locNote.textContent = 'Tekan “Lokasi saya” untuk mengaktifkan GPS.';
+        return;
+      }
+      locVal.textContent = `${userPos.lat.toFixed(4)}, ${userPos.lng.toFixed(4)}`;
+      locNote.textContent = 'JST / Jepang';
+    }
+
+    function updateQibla(){
+      if(!userPos) return;
+      const deg = bearingDeg(userPos, KAABA);
+      document.getElementById('qiblaDeg').textContent = `${deg.toFixed(1)}°`;
+      document.getElementById('needle').style.transform = `rotate(${deg}deg)`;
+      document.getElementById('qiblaHint').textContent = `Putar dari Utara sejauh ${deg.toFixed(1)}°.`;
+    }
+
+    // =====================================================
+    // 13) App init
+    // =====================================================
+    window.addEventListener('DOMContentLoaded', async () => {
+      loadPlaces();
+      initLeaflet();
+
+      // Language
+      const langSel = document.getElementById('langSel');
+      langSel.onchange = () => setTextForMode(langSel.value);
+      setTextForMode(langSel.value);
+
+      // Random ayah each visit
+      await loadRandomAyah();
+
+      // Visitor counter (optional)
+      await initVisitorCounter();
+
+      // News (best-effort)
+      await loadNews();
+
+      // Buttons
+      document.getElementById('btnLocate').onclick = async () => {
+        try{
+          const pos = await getLocation();
+          userPos = pos;
+          setLocLabel();
+
+          // If Google maps is available, use it. Else Leaflet.
+          if(gmap && placesService){
+            setGoogleUser(pos);
+            nearbySearchGoogle();
+          } else {
+            setLeafletUserMarker(pos);
+          }
+
+          updateQibla();
+          renderPrayerTimes();
+        } catch(e){
+          alert('Tidak bisa akses lokasi. Cek izin Location pada browser.');
+        }
+      };
+
+      document.getElementById('btnRefreshNear').onclick = () => refreshNear();
+      document.getElementById('btnQibla').onclick = async () => {
+        try{
+          if(!userPos) userPos = await getLocation();
+          setLocLabel();
+          updateQibla();
+        } catch(e){ alert('Tidak bisa hitung kiblat tanpa lokasi.'); }
+      };
+
+      document.getElementById('btnTimes').onclick = async () => {
+        try{
+          if(!userPos) userPos = await getLocation();
+          setLocLabel();
+          renderPrayerTimes();
+        } catch(e){ alert('Tidak bisa hitung waktu salat tanpa lokasi.'); }
+      };
+
+      document.getElementById('methodSel').onchange = () => renderPrayerTimes();
+      document.getElementById('asrSel').onchange = () => renderPrayerTimes();
+
+      document.getElementById('btnUseMy').onclick = async () => {
+        try{
+          const pos = userPos || await getLocation();
+          document.getElementById('coordInp').value = `${pos.lat.toFixed(6)}, ${pos.lng.toFixed(6)}`;
+        } catch(e){ alert('Tidak bisa akses lokasi.'); }
+      };
+      document.getElementById('btnAdd').onclick = () => addPlace();
+
+      document.getElementById('btnNews').onclick = () => loadNews();
+
+      // Chips
+      document.getElementById('chipRefreshAyah').onclick = () => loadRandomAyah();
+      document.getElementById('chipRefreshAll').onclick = async () => {
+        await loadRandomAyah();
+        await loadNews();
+        refreshNear();
+      };
+
+      // Layer toggles
+      const tMosque = document.getElementById('toggleMosque');
+      const tHalal = document.getElementById('toggleHalal');
+      tMosque.onclick = () => { tMosque.classList.toggle('on');
+        if(!gmap){
+          if(tMosque.classList.contains('on')) leafletMap.addLayer(layerMosque); else leafletMap.removeLayer(layerMosque);
+        }
+        refreshNear();
+      };
+      tHalal.onclick = () => { tHalal.classList.toggle('on');
+        if(!gmap){
+          if(tHalal.classList.contains('on')) leafletMap.addLayer(layerHalal); else leafletMap.removeLayer(layerHalal);
+        }
+        refreshNear();
+      };
+
+      // Try to switch to Google Map if key exists
+      if(GOOGLE_MAPS_API_KEY){
+        try{
+          await loadGoogleMapsScript();
+          // Swap map containers
+          document.getElementById('mapLeaflet').hidden = true;
+          document.getElementById('mapGoogle').hidden = false;
+          initGoogleMap();
+
+          // If we already have location, use it; otherwise keep default center.
+          if(userPos){
+            setGoogleUser(userPos);
+            nearbySearchGoogle();
+          }
+        } catch(e){
+          // keep Leaflet
+        }
+      }
+
+      // First render
+      setLocLabel();
+      renderPrayerTimes();
+      renderNearListFromLocal();
+    });
+  </script>
+</body>
+</html>
